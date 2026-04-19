@@ -2,6 +2,7 @@ require('dotenv').config({ path: '../.env' });
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
+const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const passport = require('passport');
 const SteamStrategy = require('passport-steam').Strategy;
@@ -406,6 +407,12 @@ app.get('/api/categories', async (req, res) => {
   }
   return res.json(results);
 });
+
+// ─── Static files (production) ────────────────────────────────────────────────
+
+const DIST = path.join(__dirname, '../client/dist');
+app.use(express.static(DIST));
+app.get('*', (_req, res) => res.sendFile(path.join(DIST, 'index.html')));
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
