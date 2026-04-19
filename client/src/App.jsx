@@ -6,24 +6,42 @@ import GameGrid from './components/GameGrid.jsx';
 import PickerOverlay from './components/PickerOverlay.jsx';
 import ToastContainer from './components/ToastContainer.jsx';
 import RatingFeed from './components/RatingFeed.jsx';
+import SignInPage from './components/SignInPage.jsx';
+import UserBadge from './components/UserBadge.jsx';
 import { usePlayers } from './hooks/usePlayers.js';
 import { useToast } from './hooks/useToast.js';
 import { useGameFilter } from './hooks/useGameFilter.js';
 import { useCategoryFilter } from './hooks/useCategoryFilter.js';
 import { useRatings } from './hooks/useRatings.js';
+import { useAuth } from './hooks/useAuth.js';
+
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen bg-navy-900 flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+        <p className="text-gray-500 text-sm">Loading…</p>
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
+  const { user, login, logout, editableSteamIds } = useAuth();
+
+  // user === undefined means the /auth/me check is still in flight
+  if (user === undefined) return <LoadingScreen />;
+  if (user === null) return <SignInPage onLogin={login} />;
+
+  return <AuthenticatedApp user={user} logout={logout} editableSteamIds={editableSteamIds} />;
+}
+
+function AuthenticatedApp({ user, logout, editableSteamIds }) {
   const { toasts, addToast, removeToast } = useToast();
   const {
-    players,
-    resolving,
-    addSteamPlayer,
-    addCustomPlayer,
-    removePlayer,
-    addCustomGame,
-    removeCustomGame,
-    loadGames,
-    refreshAllLibraries,
+    players, resolving,
+    addSteamPlayer, addCustomPlayer, removePlayer,
+    addCustomGame, removeCustomGame, loadGames, refreshAllLibraries,
   } = usePlayers(addToast);
 
   const [filterMode, setFilterMode] = useState('all');
@@ -36,19 +54,10 @@ export default function App() {
   const { ratingsMap, submitRating, removeRating } = useRatings(players);
 
   const ownershipEntries = useGameFilter(players, filterMode, searchQuery);
-
-  const {
-    filtered: filteredEntries,
-    fetching: categoryFetching,
-    progress: categoryProgress,
-  } = useCategoryFilter(ownershipEntries, multiplayerOnly);
+  const { filtered: filteredEntries, fetching: categoryFetching, progress: categoryProgress } =
+    useCategoryFilter(ownershipEntries, multiplayerOnly);
 
   const totalRatings = Object.values(ratingsMap).reduce((s, arr) => s + arr.length, 0);
-
-  function handlePickAgain() {
-    setPickerKey((k) => k + 1);
-  }
-
   const hasAnyLibrary = players.some((p) => p.games !== null || p.isCustom);
 
   return (
@@ -57,16 +66,15 @@ export default function App() {
 
       {/* Header */}
       <header className="bg-navy-800 border-b border-navy-600 sticky top-0 z-30">
-        <div className="max-w-screen-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-screen-2xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 flex-shrink-0">
             <span className="text-2xl">🎮</span>
             <div>
-              <h1 className="text-xl font-extrabold text-white leading-none">
-                Game Night Picker
-              </h1>
+              <h1 className="text-xl font-extrabold text-white leading-none">Game Night Picker</h1>
               <p className="text-xs text-gray-500 mt-0.5">Find games your whole group can play</p>
             </div>
           </div>
+
           <div className="flex items-center gap-3">
             {/* Feed toggle */}
             <button
@@ -80,17 +88,13 @@ export default function App() {
               <span>📋</span>
               <span className="hidden sm:inline">Feed</span>
               {totalRatings > 0 && (
-                <span className={`text-xs rounded-full px-1.5 py-0.5 font-bold ${
-                  showFeed ? 'bg-accent text-white' : 'bg-navy-600 text-gray-400'
-                }`}>
+                <span className={`text-xs rounded-full px-1.5 py-0.5 font-bold ${showFeed ? 'bg-accent text-white' : 'bg-navy-600 text-gray-400'}`}>
                   {totalRatings}
                 </span>
               )}
             </button>
-            <div className="hidden sm:flex items-center gap-2 text-xs text-gray-500">
-              <span className="w-2 h-2 rounded-full bg-green-accent inline-block" />
-              Powered by Steam
-            </div>
+
+            <UserBadge user={user} onLogout={logout} />
           </div>
         </div>
       </header>
@@ -99,37 +103,23 @@ export default function App() {
       <main className="max-w-screen-2xl mx-auto px-4 py-6">
         <div className="flex gap-6">
 
-          {/* Left sidebar — players */}
+          {/* Left sidebar — players (desktop) */}
           <aside className="w-80 xl:w-96 flex-shrink-0 space-y-4 hidden lg:block">
-            <AddPlayerForm
-              onAddSteam={addSteamPlayer}
-              onAddCustom={addCustomPlayer}
-              resolving={resolving}
-            />
+            <AddPlayerForm onAddSteam={addSteamPlayer} onAddCustom={addCustomPlayer} resolving={resolving} />
             <PlayerList
-              players={players}
-              onRemove={removePlayer}
-              onAddCustomGame={addCustomGame}
-              onRemoveCustomGame={removeCustomGame}
-              onLoadGames={loadGames}
-              onRefreshAll={refreshAllLibraries}
+              players={players} onRemove={removePlayer}
+              onAddCustomGame={addCustomGame} onRemoveCustomGame={removeCustomGame}
+              onLoadGames={loadGames} onRefreshAll={refreshAllLibraries}
             />
           </aside>
 
-          {/* Mobile-only player section (stacked above games) */}
+          {/* Mobile player section */}
           <div className="lg:hidden w-full space-y-4 flex-shrink-0">
-            <AddPlayerForm
-              onAddSteam={addSteamPlayer}
-              onAddCustom={addCustomPlayer}
-              resolving={resolving}
-            />
+            <AddPlayerForm onAddSteam={addSteamPlayer} onAddCustom={addCustomPlayer} resolving={resolving} />
             <PlayerList
-              players={players}
-              onRemove={removePlayer}
-              onAddCustomGame={addCustomGame}
-              onRemoveCustomGame={removeCustomGame}
-              onLoadGames={loadGames}
-              onRefreshAll={refreshAllLibraries}
+              players={players} onRemove={removePlayer}
+              onAddCustomGame={addCustomGame} onRemoveCustomGame={removeCustomGame}
+              onLoadGames={loadGames} onRefreshAll={refreshAllLibraries}
             />
           </div>
 
@@ -139,30 +129,23 @@ export default function App() {
               <>
                 <div className="bg-navy-800 rounded-xl p-4 border border-navy-600">
                   <FilterBar
-                    filterMode={filterMode}
-                    setFilterMode={setFilterMode}
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
+                    filterMode={filterMode} setFilterMode={setFilterMode}
+                    searchQuery={searchQuery} setSearchQuery={setSearchQuery}
                     gameCount={filteredEntries.length}
-                    multiplayerOnly={multiplayerOnly}
-                    setMultiplayerOnly={setMultiplayerOnly}
-                    categoryFetching={categoryFetching}
-                    categoryProgress={categoryProgress}
+                    multiplayerOnly={multiplayerOnly} setMultiplayerOnly={setMultiplayerOnly}
+                    categoryFetching={categoryFetching} categoryProgress={categoryProgress}
                   />
                 </div>
                 <GameGrid
-                  entries={filteredEntries}
-                  players={players}
-                  filterMode={filterMode}
-                  ratingsMap={ratingsMap}
-                  submitRating={submitRating}
-                  removeRating={removeRating}
+                  entries={filteredEntries} players={players} filterMode={filterMode}
+                  ratingsMap={ratingsMap} submitRating={submitRating} removeRating={removeRating}
+                  editableSteamIds={editableSteamIds}
                 />
               </>
             ) : (
               <div className="bg-navy-800 rounded-xl border border-navy-600 p-12 text-center">
                 <div className="text-6xl mb-4">🕹️</div>
-                <h2 className="text-xl font-bold text-gray-300 mb-2">Welcome to Game Night Picker</h2>
+                <h2 className="text-xl font-bold text-gray-300 mb-2">Welcome, {user.displayName}!</h2>
                 <p className="text-gray-500 text-sm max-w-sm mx-auto">
                   Add your friends' Steam profiles on the left. Once libraries are loaded, you'll see
                   which games you all share — then let fate decide what to play.
@@ -175,11 +158,7 @@ export default function App() {
           {showFeed && (
             <aside className="w-72 xl:w-80 flex-shrink-0" style={{ maxHeight: 'calc(100vh - 6rem)' }}>
               <div className="sticky top-24 h-[calc(100vh-7rem)]">
-                <RatingFeed
-                  ratingsMap={ratingsMap}
-                  players={players}
-                  onClose={() => setShowFeed(false)}
-                />
+                <RatingFeed ratingsMap={ratingsMap} players={players} onClose={() => setShowFeed(false)} />
               </div>
             </aside>
           )}
@@ -211,17 +190,13 @@ export default function App() {
         </div>
       </div>
 
-      {/* Picker overlay */}
       {showPicker && (
         <PickerOverlay
           key={pickerKey}
-          entries={filteredEntries}
-          players={players}
-          onClose={() => setShowPicker(false)}
-          onPickAgain={handlePickAgain}
-          ratingsMap={ratingsMap}
-          submitRating={submitRating}
-          removeRating={removeRating}
+          entries={filteredEntries} players={players}
+          onClose={() => setShowPicker(false)} onPickAgain={() => setPickerKey((k) => k + 1)}
+          ratingsMap={ratingsMap} submitRating={submitRating} removeRating={removeRating}
+          editableSteamIds={editableSteamIds}
         />
       )}
     </div>

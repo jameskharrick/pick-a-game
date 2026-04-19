@@ -16,7 +16,7 @@ function GroupAverage({ ratings }) {
   );
 }
 
-export default function GameDetailModal({ entry, players, ratingsMap, submitRating, removeRating, onClose }) {
+export default function GameDetailModal({ entry, players, ratingsMap, submitRating, removeRating, editableSteamIds, onClose }) {
   const { game } = entry;
   const coverUrl = game.appId
     ? `https://cdn.cloudflare.steamstatic.com/steam/apps/${game.appId}/header.jpg`
@@ -70,7 +70,7 @@ export default function GameDetailModal({ entry, players, ratingsMap, submitRati
             ) : (
               <>
                 <p className="text-xs text-gray-500 uppercase tracking-wider mb-3">
-                  {ratings.length > 0 ? 'Edit ratings' : 'Rate this game'}
+                  {ratings.length > 0 ? 'Ratings' : 'Rate this game'}
                 </p>
                 <div className="space-y-0.5">
                   {rateablePlayers.map((player) => {
@@ -81,6 +81,7 @@ export default function GameDetailModal({ entry, players, ratingsMap, submitRati
                         player={player}
                         currentRating={existing?.rating ?? null}
                         ratedAt={existing?.ratedAt ?? null}
+                        canEdit={editableSteamIds ? editableSteamIds.has(player.steamId) : true}
                         onRate={(rating) =>
                           submitRating(player.steamId, game.appId, game.name, rating)
                         }

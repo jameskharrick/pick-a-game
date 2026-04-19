@@ -38,7 +38,40 @@ STEAM_API_KEY=your_actual_key_here
 
 > **Important:** Never commit `.env` — it's in `.gitignore`.
 
-### 2b. Set Up Supabase (optional — for the rating system)
+### 2b. Set Up Steam Auth
+
+The app requires a Steam login. The sign-in flow uses Steam OpenID 2.0 — users click "Sign in through Steam", authenticate on Steam's servers, and are redirected back with a verified Steam ID stored in a JWT cookie.
+
+Add these to your `.env`:
+
+```
+# A long random secret — generate one with:
+# node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+JWT_SECRET=a-long-random-string-change-me
+
+# Local dev values:
+STEAM_RETURN_URL=http://localhost:3001/auth/steam/return
+STEAM_REALM=http://localhost:3001
+CLIENT_URL=http://localhost:5173
+```
+
+**How the local dev flow works:**
+- Steam redirects back to `localhost:3001` (the Express server on port 3001)
+- Express sets an httpOnly JWT cookie on `localhost`, then redirects to `localhost:5173` (Vite)
+- Subsequent API calls from Vite include the cookie automatically via the Vite proxy
+
+**For Vercel production**, all three variables should point to your deployed domain:
+```
+STEAM_RETURN_URL=https://your-app.vercel.app/auth/steam/return
+STEAM_REALM=https://your-app.vercel.app
+CLIENT_URL=https://your-app.vercel.app
+```
+
+Also add `JWT_SECRET` in the Vercel dashboard under **Settings → Environment Variables**.
+
+> **Note:** Steam profiles must be public for friend-list permissions to work. If a player's profile is private, the app fails closed and only allows rating their own games.
+
+### 2c. Set Up Supabase (optional — for the rating system)
 
 Ratings are stored in Supabase. Without it, everything else works fine — rating routes return a 503 that the frontend silently ignores.
 
@@ -93,9 +126,10 @@ Open [http://localhost:5173](http://localhost:5173).
 
 1. **Push your repo to GitHub** (make sure `.env` is gitignored)
 
-2. **Add the environment variable in Vercel:**
+2. **Add environment variables in Vercel:**
    - Dashboard → Your Project → Settings → Environment Variables
-   - Add `STEAM_API_KEY` = your key
+   - Add `STEAM_API_KEY`, `JWT_SECRET`, `STEAM_RETURN_URL`, `STEAM_REALM`, `CLIENT_URL`
+   - Optionally add `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` for ratings
 
 3. **Deploy:**
    ```bash

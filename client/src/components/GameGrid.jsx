@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import GameCard from './GameCard.jsx';
 import GameDetailModal from './GameDetailModal.jsx';
 
-export default function GameGrid({ entries, players, filterMode, ratingsMap, submitRating, removeRating }) {
+export default function GameGrid({ entries, players, filterMode, ratingsMap, submitRating, removeRating, editableSteamIds }) {
   const [selectedEntry, setSelectedEntry] = useState(null);
 
   if (entries.length === 0) {
@@ -50,6 +50,7 @@ export default function GameGrid({ entries, players, filterMode, ratingsMap, sub
           ratingsMap={ratingsMap}
           submitRating={submitRating}
           removeRating={removeRating}
+          editableSteamIds={editableSteamIds}
           onClose={() => setSelectedEntry(null)}
         />
       )}

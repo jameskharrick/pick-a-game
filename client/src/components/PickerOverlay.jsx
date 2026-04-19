@@ -38,7 +38,7 @@ function GroupAverage({ ratings }) {
   );
 }
 
-export default function PickerOverlay({ entries, players, onClose, onPickAgain, ratingsMap, submitRating, removeRating }) {
+export default function PickerOverlay({ entries, players, onClose, onPickAgain, ratingsMap, submitRating, removeRating, editableSteamIds }) {
   const [phase, setPhase] = useState('spinning'); // 'spinning' | 'result'
   const [displayedGame, setDisplayedGame] = useState(null);
   const [winner, setWinner] = useState(null);
@@ -182,6 +182,7 @@ export default function PickerOverlay({ entries, players, onClose, onPickAgain, 
                         player={player}
                         currentRating={existing?.rating ?? null}
                         ratedAt={existing?.ratedAt ?? null}
+                        canEdit={editableSteamIds ? editableSteamIds.has(player.steamId) : true}
                         onRate={(rating) =>
                           submitRating(player.steamId, winner.game.appId, winner.game.name, rating)
                         }
