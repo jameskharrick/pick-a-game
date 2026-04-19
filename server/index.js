@@ -2,7 +2,6 @@ require('dotenv').config({ path: '../.env' });
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const passport = require('passport');
 const SteamStrategy = require('passport-steam').Strategy;
@@ -408,20 +407,18 @@ app.get('/api/categories', async (req, res) => {
   return res.json(results);
 });
 
-// ─── Static files (production) ────────────────────────────────────────────────
-
-const DIST = path.join(__dirname, '../client/dist');
-app.use(express.static(DIST));
-app.get('*', (_req, res) => res.sendFile(path.join(DIST, 'index.html')));
-
 // ─── Start ────────────────────────────────────────────────────────────────────
 
-app.listen(PORT, () => {
-  console.log(`Game Night Picker API running on http://localhost:${PORT}`);
-  if (!process.env.STEAM_RETURN_URL) {
-    console.warn('⚠  STEAM_RETURN_URL not set — auth routes will return 503');
-  }
-  if (!supabase) {
-    console.warn('⚠  Supabase not configured — rating routes will return 503');
-  }
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Game Night Picker API running on http://localhost:${PORT}`);
+    if (!process.env.STEAM_RETURN_URL) {
+      console.warn('⚠  STEAM_RETURN_URL not set — auth routes will return 503');
+    }
+    if (!supabase) {
+      console.warn('⚠  Supabase not configured — rating routes will return 503');
+    }
+  });
+}
+
+module.exports = app;
